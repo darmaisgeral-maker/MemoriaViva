@@ -1,137 +1,53 @@
-# CLAUDE.md
+# CLAUDE.md — Alma Studio
 
-Guidance for AI assistants (Claude Code and others) working in this repository.
+Guidance for AI assistants (Claude Code and others) working on **Alma Studio**.
 
----
+Alma Studio is a standalone PWA for a **clinical pilates + physiotherapy
+studio**. It is an independent project with its own stack, design system, and
+data model — it is **not** related to any other app.
 
-## ⚠️ Read this first — repository identity
-
-This repository (`MemoriaViva`) currently contains **two distinct concerns**:
-
-1. **Memória Viva · DAR+** — the app that is *actually implemented today*. A
-   senior / elderly-care PWA (clock, cognitive games, health logging,
-   medications, caregiver area). This is the live code in `index.html`.
-2. **Alma Studio** — a *planned, not-yet-built* app (clinical pilates +
-   physiotherapy studio). This file documents its intended architecture so it
-   can be built later. **No Alma Studio code exists in the repo yet.**
-
-When a task references **Alma Studio**, treat the spec in
-[§ Alma Studio — target architecture](#alma-studio--target-architecture) as the
-blueprint. When a task touches existing functionality, you are working on
-**Memória Viva** — see [§ Current codebase](#current-codebase-memória-viva).
-
-Do **not** delete or overwrite the Memória Viva `index.html` to make room for
-Alma Studio unless explicitly told to. If a request is ambiguous about which app
-it concerns, ask before making large or hard-to-reverse changes.
+> **Status:** specification / early scaffold. This document is the build
+> blueprint; implement features to match it. Keep this file updated as the
+> codebase grows.
 
 ---
 
-## Project conventions (apply to both apps)
+## Product
 
-These conventions are derived from the existing Memória Viva code and should be
-reused for Alma Studio so the codebase stays consistent.
-
-- **Language:** all user-facing text is **PT-PT** (European Portuguese). Code
-  identifiers and comments are mixed PT/EN; comments are often PT.
-- **Frontend:** single-file, vanilla **HTML/CSS/JS** — no build step, no
-  framework, no bundler. The whole SPA lives in one `index.html` with an inline
-  `<style>` block and inline `<script>`s. Mobile-first.
-- **Supabase from the browser:** loaded via CDN
-  (`https://unpkg.com/@supabase/supabase-js@2`). The **anon** key + project URL
-  are hard-coded as `var SUPA_URL` / `var SUPA_KEY` near the top of the script.
-  Security is enforced server-side by **Row Level Security**, never by hiding
-  the anon key.
-- **Never** put the Supabase **service-role / secret** key in `index.html` or
-  any browser code. Service-role usage stays in the Node admin scripts and is
-  read from `.env` (which is git-ignored).
-- **Deploy:** static frontend on **Netlify** (`netlify.toml`: publish `.`, empty
-  build command, SPA fallback redirect to `/index.html`). Admin scripts run
-  separately with Node.
-- **Confirm before destructive actions** (deletes) and surface **toast-style**
-  feedback for user actions. Show loading states on API calls and friendly
-  error messages.
+- **Name:** Alma Studio
+- **Tagline:** "alinhar · cuidar · reabilitar"
+- **Domain:** clinical pilates, reformer, physiotherapy, personal training,
+  physical evaluations, nutrition plans, and anamnesis questionnaires.
+- **Roles:**
+  - **ADMIN** (physiotherapist / instructor) — full management.
+  - **ALUNO** (student) — personal view of their own data only.
+- **Language:** all user-facing text is **PT-PT** (European Portuguese).
 
 ---
 
-## Current codebase (Memória Viva)
+## Stack
 
-### File map
-
-| Path | Purpose |
-| --- | --- |
-| `index.html` | The entire app: ~4.7k lines, inline CSS + JS, Supabase via CDN. |
-| `index.html.html` | **Duplicate** of `index.html` (byte-identical). Likely an editor artifact — prefer consolidating to a single `index.html`. |
-| `create-users.js` | Node/ESM admin script: bulk-creates Supabase Auth users from `utentes.csv` and upserts profiles into the `utentes` table. Uses the service-role key. |
-| `set-default-pin.js` | Node/ESM admin script: upserts `default_caregiver_pin` into the `settings` table (service-role key). |
-| `sql/create_settings.sql` | Creates the `settings(key, value)` table and seeds `default_caregiver_pin`. |
-| `sql/policies_settings.sql` | Enables RLS + a public `SELECT` policy on `settings`. |
-| `utentes.csv` | Input list (`name,email`) for `create-users.js`. |
-| `utentes-criados.csv` | Generated output of created users (includes passwords — handle carefully). |
-| `package.json` | ESM (`"type": "module"`); npm scripts `create-users`, `set-default-pin`. Deps: `@supabase/supabase-js`, `dotenv`. |
-| `netlify.toml` | Netlify static deploy config + SPA redirect. |
-| `.env.example` | Template for `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`. |
-| `logo-darmais.png.png` | DAR+ logo asset (note the doubled extension). |
-
-### Architecture of `index.html`
-
-- **Visual modes:** CSS classes `.manha` / `.tarde` / `.noite` swap a full set of
-  CSS custom properties (`--bg`, `--pri`, `--tx`, …). Time-of-day theming.
-- **Screen router:** a global `go(id)` / `goBack()` pair switches the active
-  screen; `render()` (and many `renderX(el, …)` functions) build screen markup
-  imperatively into a container element.
-- **Supabase access:** `initSupabase()` creates the client; helpers wrap
-  `_supa.auth.signInWithPassword`, `resetPasswordForEmail`, `updateUser`, and
-  table calls like `_supa.from('utentes' | 'health_records' | 'medications' |
-  'contacts' | 'settings').select/insert/upsert/update(...)`.
-- **Offline sync queue:** `_syncQueue` holds pending write functions; they are
-  flushed when `_isOnline`. Failed writes are re-queued (`unshift`) and retried.
-- **Safe storage:** `ssGet/ssSet/ssDel` wrap `sessionStorage` with an in-memory
-  fallback for contexts where storage throws.
-- **Caregiver PIN:** read from `settings.default_caregiver_pin` (falls back to
-  an `app_settings` table); set via `set-default-pin.js`.
-
-### Admin script workflow
-
-```bash
-npm install
-cp .env.example .env          # then fill SUPABASE_SERVICE_ROLE_KEY (sb_secret_...)
-npm run create-users          # reads utentes.csv → creates Auth users + upserts profiles
-npm run set-default-pin 5678  # writes settings.default_caregiver_pin
-```
-
-- Scripts default `SUPABASE_URL` to the project URL if unset.
-- They create the client with `auth: { persistSession: false }`.
-- `create-users.js` parses the CSV (skips a `name,email` header), generates
-  random passwords, sets `email_confirm: true`, and writes `utentes-criados.csv`.
-
-### There is no test suite, linter, or CI
-
-No `test`/`lint` scripts exist. Verify changes by opening `index.html` in a
-browser (or `npx serve .`) and exercising the affected screens. If you add
-tooling, document it here.
-
----
-
-## Alma Studio — target architecture
-
-> Status: **specification only — not yet implemented.** Build it following the
-> [project conventions](#project-conventions-apply-to-both-apps) above (vanilla
-> single-page `index.html`, Supabase via CDN + RLS, Netlify static deploy).
-> The Express backend below is optional and only needed for server-side work
-> (e.g. Storage signing, admin bulk ops) — most CRUD can go straight to
-> Supabase from the browser, exactly as Memória Viva does.
-
-### Stack
-
-- **Frontend:** HTML/CSS/JS vanilla, single-page, mobile-first.
-- **Backend (optional):** Node.js + Express — only for operations that must not
-  run in the browser. Deploy to Railway or Render.
+- **Frontend:** HTML/CSS/JS **vanilla**, single-page app, mobile-first. No build
+  step / framework unless introduced later (document it here if so).
+- **Backend (optional):** Node.js + Express — only for work that must not run in
+  the browser (Storage signing, admin bulk ops). Most CRUD goes directly to
+  Supabase from the client. Deploy to Railway or Render.
 - **Database:** Supabase (PostgreSQL).
 - **Auth:** Supabase Auth — email + password.
 - **Storage:** Supabase Storage (evaluation photos).
 - **Deploy:** Netlify (frontend) + Railway/Render (backend, if used).
 
-### Design system
+### Supabase access rules
+
+- The browser uses the **anon** key + project URL only. Security is enforced by
+  **Row Level Security**, never by hiding the anon key.
+- **Never** put the Supabase **service-role / secret** key in frontend code.
+  Service-role usage lives in Node admin scripts and reads from `.env` (which
+  must be git-ignored).
+
+---
+
+## Design system
 
 | Token | Value |
 | --- | --- |
@@ -141,42 +57,62 @@ tooling, document it here.
 | Fonts | Montserrat (body) + Bebas Neue (display) |
 | Cards | Glassmorphism — `rgba(255,255,255,…)` + `backdrop-filter: blur()` |
 | Nav | Bottom navigation, 5 tabs, elevated centre button |
+| Theme color | `#00B4D8` |
 | Reference look | FitManager.app style |
 
-- **Branding:** logo `alma-logo.png`; app name "Alma Studio"; tagline
-  "alinhar · cuidar · reabilitar"; `theme_color: #00B4D8`.
-
-### Roles
-
-- **ADMIN** (physio / instructor): full management.
-- **ALUNO** (student): personal read-only-ish view of their own data.
-- After login, redirect by role: ADMIN → admin panel, ALUNO → home.
+- **Logo:** `alma-logo.png` (to be added to the project).
 
 ### Bottom navigation
 
 - **Aluno:** Home · **Treinos** (centre, elevated) · Nutri. · Avaliação · Quest.
 - **Admin:** Início · **Alunos** (centre) · Treinos · Aval. · Sessões.
 
-### Feature scope
+---
 
-**Admin:** student CRUD + deactivate (name, email, password, photo); workout
-plans (per-student, rest time, exercises with sets/reps/notes, multiple plans
-A/B…); sessions/agenda (type, date, start/end, status agendada/realizada/
-cancelada, weekly view); physical evaluations (BMI, weight, body fat/lean mass,
-body measurements, photos front/back/profile in Storage, weight-evolution
-chart); questionnaire builder (open / multiple-choice / 1–5 scale, assign to
-student, view answers); meal plans (macro targets, meals → foods).
+## Feature scope
 
-**Aluno:** dashboard (greeting, summary cards, weekly calendar with activity
-dots, day's sessions); assigned workout plans + "Começar Treino"/"Treino
-Livre"; **workout execution** (sticky MM:SS timer, per-set reps/load inputs, ✓
-to complete a set, RPE 1–10, auto rest-timer overlay, "Finalizar Treino" → saves
-to history); workout history; physical evaluation (4-col grid with deltas
-coloured green/red/yellow, weight line chart, before/after photos); meal plan
-(daily macros + structured meals); questionnaires (list with status, inline
-answer form, submit).
+### Admin
 
-### Database schema (Supabase / PostgreSQL)
+- **Alunos:** create / edit / deactivate (nome, email, password, foto); view
+  full profile.
+- **Planos de treino:** per-student plans (nome, aluno, rest time); exercises
+  (nome, séries, repetições, obs); multiple plans per student (Treino A/B…).
+- **Sessões / Agenda:** create sessions (aluno, tipo, data, hora início/fim);
+  status agendada (green) / realizada (grey) / cancelada (red); weekly view with
+  navigation.
+- **Avaliações físicas:** record IMC, peso, massa gorda/magra + body measurements
+  (bícep D/E, peito, abdómen, cintura, quadril, coxa D/E, gémeo D/E); upload
+  photos (frente, costas, perfil) to Supabase Storage; history + weight-evolution
+  chart.
+- **Questionários (anamnese):** builder with 3 question types — aberta
+  (textarea), múltipla escolha (radio), escala 1–5; assign to a student; view
+  submitted answers.
+- **Planos alimentares:** plan (nome, aluno, macro targets kcal/proteína/carbos/
+  gordura); meals → foods (nome + quantidade); structured by meal.
+
+### Aluno
+
+- **Home / Dashboard:** greeting; summary cards (treinos realizados, último
+  peso); weekly calendar (Seg–Dom) with activity dots; selected-day sessions;
+  prev / today / next week navigation.
+- **Planos de treino:** list assigned plans; each shows exercises with
+  séries:reps + obs; "Começar Treino" and "Treino Livre" buttons.
+- **Execução de treino:** sticky MM:SS workout timer; per exercise show name +
+  admin notes; per set, inputs for repetições + carga/peso and a ✓ to complete;
+  RPE 1–10; automatic rest-timer overlay after marking a set; "Finalizar Treino"
+  saves to history.
+- **Histórico de treinos:** chronological list (nome, data, duração, nº de
+  exercícios).
+- **Avaliação física:** 4-column grid of all values + delta vs previous
+  evaluation, coloured green (better) / red (worse) / yellow (equal); weight line
+  chart; before/after photos labelled Frente / Costas / Perfil.
+- **Plano alimentar:** daily macros + structured meals with foods/quantities.
+- **Questionários:** list with status (por responder / respondido); inline answer
+  form; submit saves to server.
+
+---
+
+## Database schema (Supabase / PostgreSQL)
 
 ```
 users(id, nome, email, role, foto_url, ativo, created_at)
@@ -201,21 +137,45 @@ refeicoes(id, plano_id, nome, ordem)
 alimentos(id, refeicao_id, nome, quantidade, ordem)
 ```
 
+### Enums & conventions
+
+- `users.role` ∈ {ADMIN, ALUNO}; `users.ativo` toggles soft-deactivation.
 - `sessoes.tipo` ∈ {Pilates Clínico, Reformer, Fisioterapia, Acompanhamento,
-  Avaliação, Treino Personalizado}; `status` ∈ {agendada, realizada, cancelada}.
+  Avaliação, Treino Personalizado}; `sessoes.status` ∈ {agendada, realizada,
+  cancelada}.
+- `fotos_avaliacao.tipo` ∈ {frente, costas, perfil}.
 - `perguntas.tipo` ∈ {aberta, multipla, escala}; multiple-choice options live in
   `opcoes_json`.
-- **RLS (required):** students see only their own rows (`aluno_id = auth.uid()`
-  pattern); admins see all rows. Mirror the SQL-in-`sql/` convention from
-  Memória Viva: keep schema + policies as committed `.sql` files.
+- Keep schema + policies as committed `.sql` files (e.g. under `sql/`).
 
-### Auth & PWA
+### Row Level Security (required)
 
-- Login: email + password; "Lembrar dados" (persistent session); "Esqueceu a
-  password?" → `resetPasswordForEmail`; role-based redirect.
-- PWA: `manifest.json` (name, icons, `theme_color: #00B4D8`), a service worker
-  for basic offline caching, and an "Instalar APP" button on login when the
-  `beforeinstallprompt` event is available.
+- **Aluno** sees only their own rows — `aluno_id = auth.uid()` (and equivalent
+  joins for child tables like `exercicios`, `historico_series`,
+  `respostas_detalhe`, `refeicoes`, `alimentos`).
+- **Admin** sees all rows.
+- Enable RLS on every table; do not rely on the client to scope data.
+
+---
+
+## Auth & PWA
+
+- **Login:** email + password; "Lembrar dados de login" (persistent session);
+  "Esqueceu a password?" → `resetPasswordForEmail`; redirect by role after login
+  (ADMIN → painel, ALUNO → home).
+- **PWA:** `manifest.json` (name, icons, `theme_color: #00B4D8`); a service
+  worker for basic offline caching; an "Instalar APP" button on the login screen
+  when the `beforeinstallprompt` event is available.
+
+---
+
+## UX conventions
+
+- All user-facing text in **PT-PT**.
+- **Confirm before deleting** any record.
+- **Toast** notifications for action feedback.
+- **Loading states** on every API call.
+- Friendly, human error messages — never raw errors to the user.
 
 ---
 
@@ -224,12 +184,10 @@ alimentos(id, refeicao_id, nome, quantidade, ordem)
 - **Git:** develop on the designated feature branch; commit with clear messages;
   push with `git push -u origin <branch>`. Do **not** open a pull request unless
   explicitly asked.
-- **Secrets:** never commit `.env` or real keys. `utentes-criados.csv` contains
-  generated passwords — do not expose it externally.
-- **Scope discipline:** Memória Viva and Alma Studio are separate apps in this
-  repo. Confirm which one a task targets before broad changes, and never replace
-  one with the other without explicit instruction.
-- **No build/test tooling exists** — verify in the browser and state honestly
-  what you did and didn't verify.
-- **GitHub:** the active repo scope is `darmaisgeral-maker/memoriaviva`; use the
-  `mcp__github__*` tools for any GitHub interaction (no `gh` CLI available).
+- **Secrets:** never commit `.env` or real keys; keep the service-role key out of
+  the browser entirely.
+- **No build/test tooling exists yet** — verify changes in the browser (e.g.
+  `npx serve .`) and state honestly what you did and did not verify. If you add
+  tooling (tests, linter, CI), document it in this file.
+- **Keep this file current:** update the schema, feature scope, and conventions
+  here whenever they change.
