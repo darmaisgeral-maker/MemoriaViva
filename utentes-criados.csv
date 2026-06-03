@@ -1,0 +1,3 @@
+name,email,password,created,profileUpserted,error
+"DARMAIS","darmaisgeral@gmail.com","fQqCrggBchGfr2ib","sim","sim",""
+"DARMAISAPOIO","darmaisapoio@gmail.com","","não","sim","Utilizador de autenticação já existe. Não foi criado novamente."

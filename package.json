@@ -1,0 +1,14 @@
+{
+  "name": "memoria-viva-utentes",
+  "version": "1.0.0",
+  "description": "Script para criar contas de utentes no Supabase para a app Memória Viva.",
+  "type": "module",
+  "scripts": {
+    "create-users": "node create-users.js",
+    "set-default-pin": "node set-default-pin.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "dotenv": "^16.0.0"
+  }
+}
