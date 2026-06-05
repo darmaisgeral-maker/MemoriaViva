@@ -449,7 +449,7 @@ const SEASONS=[
   {n:'Inverno',e:'&#10052;&#65039;',m:[12,1,2],frase:'As noites são longas e o frio convida a ficar quentinho em casa.'},
   {n:'Primavera',e:'&#127800;',m:[3,4,5],frase:'A natureza renasce — é a estação das flores e dos dias mais longos.'},
   {n:'Verão',e:'&#9728;&#65039;',m:[6,7,8],frase:'Os dias são quentes e longos. Hidrate-se bem e evite o sol nas horas mais quentes.'},
-  {n:'Outono',e:'&#127810;',m:[9,10,11],frase:'As folhas ficam castanhas e o ar fresco — tempo de castañas e chá quente.'},
+  {n:'Outono',e:'&#127810;',m:[9,10,11],frase:'As folhas ficam castanhas e o ar fresco — tempo de castanhas e chá quente.'},
 ];
 function getSeason(mon){return SEASONS.find(s=>s.m.includes(mon))||SEASONS[0]}
 function todayKey(){return new Date().toISOString().slice(0,10)}
@@ -1774,6 +1774,43 @@ window.chPin = async function(){
 }
 window.changeMode=function(m){DB.mode=m;saveDB();CS='home';render();}
 window.toggleParam=function(id){if(!DB.params)DB.params={};DB.params[id]=!isParamActive(id);saveDB();renderCarer(document.getElementById('content'));}
+
+// ── HEALTH ROUTINE MANAGEMENT ──────────────────────────────
+window.healthRoutineAdd=function(){
+  if(!DB.health_routine)DB.health_routine=[];
+  DB.health_routine.push({id:'hr_'+Date.now(),time:'08:00',icon:'📋',label:'Nova tarefa',med:false});
+  saveDB();renderCarer(document.getElementById('content'));
+}
+window.healthRoutineDel=function(i){
+  if(!DB.health_routine)return;
+  if(!confirm('Remover esta tarefa da rotina?'))return;
+  DB.health_routine.splice(i,1);
+  saveDB();renderCarer(document.getElementById('content'));
+}
+window.healthRoutineUpd=function(i,field,value){
+  if(!DB.health_routine)return;
+  DB.health_routine[i][field]=value;
+  saveDB();
+}
+window.healthRoutineToggleMed=function(i){
+  if(!DB.health_routine)return;
+  DB.health_routine[i].med=!DB.health_routine[i].med;
+  saveDB();renderCarer(document.getElementById('content'));
+}
+window.healthRoutineMove=function(i,dir){
+  if(!DB.health_routine)return;
+  const newIdx=i+dir;
+  if(newIdx<0||newIdx>=DB.health_routine.length)return;
+  const temp=DB.health_routine[i];
+  DB.health_routine[i]=DB.health_routine[newIdx];
+  DB.health_routine[newIdx]=temp;
+  saveDB();renderCarer(document.getElementById('content'));
+}
+window.healthRoutineReset=function(){
+  if(!confirm('Repor a rotina padrão? As tarefas personalizadas serão perdidas.'))return;
+  DB.health_routine=DEFAULT_HEALTH_ROUTINE.map(x=>({...x}));
+  saveDB();renderCarer(document.getElementById('content'));
+}
 
 // ════════════════════════════════════════════════════════
 // ████████████████████████████████████████████████████████
