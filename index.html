@@ -680,7 +680,51 @@ window.doSetup=function(){
 // ████████████████████████████████████████████████████████
 // ════════════════════════════════════════════════════════
 function buildSaudeNav(){
-  return[{id:'home',e:'&#127968;',l:'Início'},{id:'registo',e:'&#128203;',l:'Parâmetros'},{id:'perfil_urg',e:'&#128680;',l:'Urgência'},{id:'medicacao',e:'&#128138;',l:'Medicação'},{id:'cuidador',e:'&#128273;',l:'Cuidador'}];
+  return[
+    {id:'home',e:'&#127968;',l:'Início'},
+    {id:'registo',e:'&#128203;',l:'Parâmetros'},
+    {id:'rotina',e:'📅',l:'Rotina'},
+    {id:'perfil_urg',e:'&#128680;',l:'Urgência'},
+    {id:'medicacao',e:'&#128138;',l:'Medicação'},
+    {id:'cuidador',e:'&#128273;',l:'Cuidador'}
+  ];
+}
+
+// rotina de saúde editável
+const DEFAULT_HEALTH_ROUTINE=[
+  {id:'hr_1',time:'07:30',icon:'🌅',label:'Acordar e verificar sinais vitais',med:false},
+  {id:'hr_2',time:'08:00',icon:'🍽️',label:'Pequeno-almoço',med:false},
+  {id:'hr_3',time:'08:30',icon:'💊',label:'Tomar medicação matinal',med:true},
+  {id:'hr_4',time:'10:00',icon:'🚶',label:'Passeio leve ou alongamentos',med:false},
+  {id:'hr_5',time:'12:30',icon:'🍲',label:'Almoço',med:false},
+  {id:'hr_6',time:'15:30',icon:'☕',label:'Lanche e hidratação',med:false},
+  {id:'hr_7',time:'18:00',icon:'💊',label:'Tomar medicação da tarde/noite',med:true},
+  {id:'hr_8',time:'20:00',icon:'🌙',label:'Preparar para dormir',med:false},
+];
+function getHealthRoutine(){
+  if(DB.health_routine && DB.health_routine.length) return DB.health_routine;
+  return DEFAULT_HEALTH_ROUTINE;
+}
+function getHealthTaskDone(date){
+  if(!DB.health_routine_done) return [];
+  return DB.health_routine_done[date]||[];
+}
+function setHealthTaskDone(date, done){
+  if(!DB.health_routine_done) DB.health_routine_done={};
+  DB.health_routine_done[date]=done;
+  saveDB();
+}
+function isHealthTaskDone(i,date){
+  return getHealthTaskDone(date).includes(i);
+}
+function toggleHealthTask(i){
+  const today=todayKey();
+  const done=getHealthTaskDone(today).slice();
+  const idx=done.indexOf(i);
+  if(idx>=0) done.splice(idx,1);
+  else done.push(i);
+  setHealthTaskDone(today, done);
+  const fn=SCR['rotina']; if(fn) fn(document.getElementById('content'));
 }
 
 // ── HOME SAÚDE ──────────────────────────────────────────
@@ -746,6 +790,7 @@ function homeSaude(el){
   <div class="g2">
     <div class="btn-tile" onclick="go('registo_rapido')" style="background:rgba(58,158,114,.12);border:2px solid rgba(58,158,114,.3);grid-column:span 2"><div style="font-size:28px;margin-bottom:5px">&#9889;</div><div style="font-size:14px;font-weight:700;color:var(--sage)">Registo Rápido da Visita</div><div style="font-size:11px;color:var(--txm);margin-top:2px">Tensão · Medicação · Humor · Notas</div></div>
     <div class="btn-tile" onclick="go('registo')" style="background:rgba(26,106,173,.08)"><div style="font-size:30px;margin-bottom:5px">📋</div><div style="font-size:13px;font-weight:700;color:var(--tx);font-family:'Nunito',system-ui,sans-serif">Parâmetros</div></div>
+    <div class="btn-tile" onclick="go('rotina')" style="background:rgba(26,158,92,.08)"><div style="font-size:30px;margin-bottom:5px">📅</div><div style="font-size:13px;font-weight:700;color:var(--tx);font-family:'Nunito',system-ui,sans-serif">Rotina</div><div style="font-size:11px;color:var(--txm);margin-top:2px">Tarefas diárias</div></div>
     <div class="btn-tile" onclick="go('cuidador');_ctab='medicacao'" style="background:${medAdh&&medAdh.total>0&&medAdh.done<medAdh.total?'rgba(220,38,38,.07)':medAdh&&medAdh.done===medAdh.total&&medAdh.total>0?'rgba(26,158,92,.08)':'rgba(26,106,173,.07)'};position:relative">
       ${medAdh&&medAdh.total>0&&medAdh.done<medAdh.total?`<div style="position:absolute;top:8px;right:10px;background:var(--danger);border-radius:50%;width:20px;height:20px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">${medAdh.total-medAdh.done}</div>`:''}
       <div style="font-size:30px;margin-bottom:5px">💊</div>
@@ -774,6 +819,35 @@ function homeSaude(el){
 function alertBox(icon,msg,cls){
   return`<div class="alert-box" style="background:${cls==='alert'?'var(--dangerl)':'var(--goldl)'};border:1.5px solid ${cls==='alert'?'var(--danger)44':'var(--gold)44'};color:${cls==='alert'?'var(--danger)':'var(--gold)'}"><span style="font-size:18px">${icon}</span>${esc(msg)}</div>`;
 }
+
+reg('rotina',function(el){
+  const today=todayKey();
+  const tasks=getHealthRoutine();
+  const done=getHealthTaskDone(today);
+  const completed=done.length;
+  const pct=tasks.length?Math.round(completed/tasks.length*100):100;
+  el.innerHTML=`<div class="screen">
+    <div class="card" style="padding:14px 16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+        <div>
+          <div class="sec-title">Rotina de Saúde</div>
+          <div style="font-size:12px;color:var(--txm);line-height:1.6">Toque numa tarefa ao completar. Edite a rotina no Modo Cuidador.</div>
+        </div>
+        <span style="font-size:13px;color:var(--pri);font-weight:700">${completed}/${tasks.length}</span>
+      </div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    ${tasks.length?tasks.map((it,i)=>`<div onclick="toggleHealthTask(${i})" style="display:flex;align-items:center;gap:14px;border-radius:16px;padding:14px 16px;margin-bottom:10px;cursor:pointer;background:${isHealthTaskDone(i,today)?'rgba(26,158,92,.14)':it.med?'rgba(220,38,38,.08)':'var(--card)'};border:2px solid ${isHealthTaskDone(i,today)?'var(--sage)':'var(--bord)'};box-shadow:0 2px 10px var(--sh)">
+        <div style="font-size:24px;line-height:1">${esc(it.icon||'🗓️')}</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;color:${isHealthTaskDone(i,today)?'var(--sage)':'var(--tx)'};font-family:'Nunito',system-ui,sans-serif">${esc(it.label)}</div>
+          <div style="font-size:12px;color:var(--txl);margin-top:4px">${esc(it.time)}${it.med?' · Medicação':''}</div>
+        </div>
+        <div style="font-size:20px;color:${isHealthTaskDone(i,today)?'var(--sage)':'var(--bord)'}">${isHealthTaskDone(i,today)?'✅':'○'}</div>
+      </div>`).join(''):`<div class="card" style="text-align:center;padding:28px;background:var(--bg2);border-color:var(--bord)">Sem tarefas definidas. Edite a rotina no Modo Cuidador.</div>`}
+    <div style="text-align:center;margin-top:10px"><button class="btn-sec" onclick="go('cuidador');_ctab='rotina'">🛠️ Editar rotina no Cuidador</button></div>
+  </div>`;
+});
 
 // ── REGISTO PARÂMETROS ──────────────────────────────────
 reg('registo',function(el){renderRegisto(el,todayKey(),false);});
@@ -1424,7 +1498,7 @@ function renderMedScreen(el){
 }
 
 function renderCarer(el){
-  const tabs=[{id:'register',l:'Registar'},{id:'medicacao',l:'💊 Medicação'},{id:'contactos',l:'📞 Contactos'},{id:'customize',l:'Personalizar'},{id:'history',l:'Histórico'},{id:'profile',l:'Perfil'},{id:'settings',l:'Config'}];
+  const tabs=[{id:'register',l:'Registar'},{id:'medicacao',l:'💊 Medicação'},{id:'contactos',l:'📞 Contactos'},{id:'rotina',l:'Rotina'},{id:'customize',l:'Personalizar'},{id:'history',l:'Histórico'},{id:'profile',l:'Perfil'},{id:'settings',l:'Config'}];
   const tb=`<div class="tabs">${tabs.map(t=>`<button class="tab-btn${_ctab===t.id?' on':''}" onclick="cTab('${t.id}')">${t.l}</button>`).join('')}</div>`;
   if(_ctab==='register'){
     el.innerHTML=tb+`<div style="padding:10px 14px 0;flex-shrink:0"><label class="lbl">Data do registo</label><input type="date" value="${_cdate}" max="${todayKey()}" oninput="_cdate=this.value;_mdate=this.value" style="margin-bottom:0;font-size:15px;font-weight:600"></div>`;
@@ -1526,6 +1600,39 @@ function renderCarer(el){
     html+='<button onclick="contactAdd()" class="btn">+ Adicionar Contacto</button>';
     html+='<div class="card" style="background:var(--bg2)"><div style="font-size:12px;color:var(--txm);line-height:1.8">&#128161; O primeiro contacto é destacado no SOS como contacto principal.</div></div></div>';
     el.innerHTML=html; return;
+  }
+  if(_ctab==='rotina'){
+    if(!DB.health_routine || !DB.health_routine.length) DB.health_routine = DEFAULT_HEALTH_ROUTINE.map(x=>({ ...x }));
+    const tasks = DB.health_routine;
+    el.innerHTML = tb + `<div class="screen">
+      <div style="font-size:13px;color:var(--txm);margin-bottom:12px;line-height:1.6;font-family:'Nunito',system-ui,sans-serif">Edite a rotina diária do utente. Esta lista aparece no Modo Saúde e pode ser assinalada diariamente.</div>
+      ${tasks.length===0?`<div class="card" style="text-align:center;padding:28px;background:var(--bg2);margin-bottom:12px">Nenhuma tarefa definida ainda.</div>`:''}
+      ${tasks.map((t,i)=>`<div class="card" style="margin-bottom:11px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:24px">${esc(t.icon||'🗓️')}</div>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--prid);font-family:'Fraunces',Georgia,serif">${esc(t.label||'Nova tarefa')}</div>
+              <div style="font-size:12px;color:var(--txl)">${esc(t.time||'')}</div>
+            </div>
+          </div>
+          <button onclick="healthRoutineDel(${i})" style="background:var(--dangerl);border:none;border-radius:10px;padding:8px 11px;font-size:12px;color:var(--danger);cursor:pointer">Remover</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label class="lbl">Hora</label><input type="time" value="${esc(t.time||'')}" oninput="healthRoutineUpd(${i},'time',this.value)" style="font-size:14px;padding:8px 10px"></div>
+          <div><label class="lbl">Ícone</label><input value="${esc(t.icon||'')}" oninput="healthRoutineUpd(${i},'icon',this.value)" placeholder="Ex: 🚶" style="font-size:14px;padding:8px 10px"></div>
+        </div>
+        <label class="lbl">Descrição</label><input value="${esc(t.label||'')}" oninput="healthRoutineUpd(${i},'label',this.value)" placeholder="Ex: Fazer alongamentos pela manhã" style="font-size:14px;padding:8px 10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px">
+          <button class="btn-sec" onclick="healthRoutineToggleMed(${i})" style="flex:1">${t.med?'✅ Medicação':'◻️ Marcar como medicação'}</button>
+          <button class="btn-sec" onclick="healthRoutineMove(${i},-1)" style="width:48px">↑</button>
+          <button class="btn-sec" onclick="healthRoutineMove(${i},1)" style="width:48px">↓</button>
+        </div>
+      </div>`).join('')}
+      <button class="btn-pri" onclick="healthRoutineAdd()">+ Adicionar tarefa</button>
+      <button class="btn-sec" onclick="healthRoutineReset()" style="margin-top:10px">Repor rotina padrão</button>
+    </div>`;
+    return;
   }
   if(_ctab==='customize'){
     const cats={vitais:'🫀 Sinais Vitais',condicoes:'🩺 Condições Específicas',bemestar:'💆 Bem-estar',habitos:'🌿 Hábitos Diários',seguranca:'⚠️ Segurança',nutricao:'🥗 Nutrição',medicacao:'💊 Medicação'};
