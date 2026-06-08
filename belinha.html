@@ -298,8 +298,10 @@ function showTab(tab) {
         </div>
         <div id="day-activities"></div>
       </div>
+      <button class="btn" onclick="saveProgress()">💾 Guardar Progresso</button>
     `;
     showDayActivities(today);
+    loadChecks('atividades');
   }
   else if(tab === 'registo') {
     content.innerHTML = `
@@ -341,15 +343,23 @@ function showDayActivities(day) {
   event.target.classList.add('active');
   
   const activities = ATIVIDADES_SEMANA[day] || [];
-  document.getElementById('day-activities').innerHTML = activities.length ? activities.map(a => `
-    <div class="horario-item">
-      <div class="horario-time">${a.time}</div>
-      <div class="horario-desc">
-        <div class="horario-title">${a.icon} ${a.title}</div>
-        <div class="horario-detail">${a.desc}</div>
+  document.getElementById('day-activities').innerHTML = activities.length ? activities.map((a, i) => `
+    <div class="checklist-item" onclick="toggleCheck(this,'ativ_${day}_${i}')">
+      <div class="checkbox"></div>
+      <div style="flex:1">
+        <div class="horario-item" style="border:none;background:transparent;padding:0;margin:0">
+          <div class="horario-time">${a.time}</div>
+          <div class="horario-desc">
+            <div class="horario-title">${a.icon} ${a.title}</div>
+            <div class="horario-detail">${a.desc}</div>
+          </div>
+        </div>
       </div>
     </div>
   `).join('') : '<div style="text-align:center;padding:20px;color:#999">Sem atividades especiais</div>';
+  
+  // Recarregar checks depois de renderizar
+  loadChecks('atividades');
 }
 
 function toggleCheck(el, id) {
