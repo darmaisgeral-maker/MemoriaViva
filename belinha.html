@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plano da Belinha · Cuidadora Luísa</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#fafaf8;color:#1c1917;padding:0}
+.container{max-width:900px;margin:0 auto}
+.header{background:#1c1917;color:#fff;padding:20px;text-align:center}
+.header h1{font-size:24px;margin-bottom:5px}
+.header p{font-size:14px;opacity:.7}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e8e0d8;position:sticky;top:0;z-index:100}
+.tab{flex:1;padding:12px;text-align:center;cursor:pointer;font-weight:600;font-size:13px;border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{border-bottom-color:#e85a2e;color:#e85a2e;background:#fef5f2}
+.tab:hover{background:#f9f9f9}
+.content{padding:15px}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.section-title{font-size:18px;font-weight:700;color:#1c1917;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.horario-item{display:flex;gap:15px;padding:12px;border-left:4px solid #e85a2e;background:#fef5f2;border-radius:8px;margin-bottom:10px}
+.horario-time{font-weight:700;color:#e85a2e;min-width:50px;font-size:16px}
+.horario-desc{flex:1}
+.horario-title{font-weight:600;margin-bottom:3px}
+.horario-detail{font-size:13px;color:#666;line-height:1.5}
+.checklist-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .2s;border:2px solid #e8e0d8}
+.checklist-item:hover{background:#f9f9f9}
+.checklist-item.done{background:#edf4f0;border-color:#2d6a4f}
+.checkbox{width:24px;height:24px;border:2px solid #e8e0d8;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+.checklist-item.done .checkbox{background:#2d6a4f;border-color:#2d6a4f;color:#fff}
+.btn{background:#e85a2e;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;width:100%;margin-top:10px}
+.btn:hover{background:#d14a1e}
+.btn-secondary{background:#2d6a4f}
+.btn-secondary:hover{background:#1f4a37}
+.status{padding:10px 15px;border-radius:8px;font-size:14px;margin-bottom:15px;display:flex;align-items:center;gap:10px}
+.status.success{background:#edf4f0;color:#2d6a4f;border:1px solid #2d6a4f44}
+.status.warning{background:#fdf5e6;color:#b8750a;border:1px solid #b8750a44}
+.status.error{background:#fdf0ee;color:#c0392b;border:1px solid #c0392b44}
+.progress-bar{background:#e8e0d8;height:8px;border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-fill{background:linear-gradient(90deg,#e85a2e,#2d6a4f);height:100%;transition:width .3s}
+.day-selector{display:flex;gap:8px;margin-bottom:15px;overflow-x:auto;padding-bottom:5px}
+.day-btn{padding:8px 16px;border:2px solid #e8e0d8;border-radius:8px;background:#fff;cursor:pointer;font-weight:600;white-space:nowrap;transition:all .2s}
+.day-btn.active{background:#e85a2e;color:#fff;border-color:#e85a2e}
+.day-btn:hover{border-color:#e85a2e}
+.nota-box{background:#fef5f2;border-left:4px solid #e85a2e;padding:12px;border-radius:6px;margin-top:10px;font-size:14px;line-height:1.6}
+.exercise-item{background:#f9f9f9;padding:12px;border-radius:8px;margin-bottom:8px;border-left:3px solid #2d6a4f}
+.exercise-title{font-weight:600;margin-bottom:4px}
+.exercise-reps{font-size:12px;color:#666;font-style:italic}
+.agua-counter{display:flex;align-items:center;justify-content:center;gap:15px;padding:20px;background:#e3f2fd;border-radius:12px;margin:15px 0}
+.agua-btn{width:50px;height:50px;border-radius:50%;border:none;font-size:24px;cursor:pointer;transition:all .2s}
+.agua-btn.minus{background:#fdf0ee;color:#c0392b}
+.agua-btn.plus{background:#edf4f0;color:#2d6a4f}
+.agua-btn:hover{transform:scale(1.1)}
+.agua-value{font-size:48px;font-weight:700;color:#1976d2;min-width:80px;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>👵 Plano da Belinha</h1>
+    <p>Cuidadora: Luísa · Acompanhamento Diário</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('horario')">📅 Horário</div>
+    <div class="tab" onclick="showTab('higiene')">🛁 Higiene</div>
+    <div class="tab" onclick="showTab('exercicios')">💪 Exercícios</div>
+    <div class="tab" onclick="showTab('agua')">💧 Água</div>
+    <div class="tab" onclick="showTab('atividades')">🎵 Atividades</div>
+    <div class="tab" onclick="showTab('registo')">📝 Registo</div>
+  </div>
+
+  <div id="content" class="content"></div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://amphdsvvndofqmttpjdf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtcGhkc3Z2bmRvZnFtdHRwamRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjU0NDIsImV4cCI6MjA5NTU0MTQ0Mn0.TCH0Qz-qqVtOj6M6q9wkCJGoIPXnm5qwbPrGMS7mZfM';
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentDate = new Date().toISOString().slice(0,10);
+let todayData = {};
+
+const HORARIO = [
+  {time:'09:00',icon:'🛁',title:'Higiene',desc:'Lavar, mudar fralda, vestir'},
+  {time:'09:30',icon:'☕',title:'Pequeno-almoço',desc:'Na cama · dar água depois'},
+  {time:'10:00',icon:'💪',title:'Exercícios — 1.ª vez',desc:'Ver secção de exercícios'},
+  {time:'10:30',icon:'🪑',title:'Levantar',desc:'Sentar na cadeira de rodas'},
+  {time:'11:00',icon:'🌳',title:'Quintal ou sala',desc:'Atividade do dia'},
+  {time:'12:30',icon:'🍲',title:'Almoço',desc:'Dar sopa · dar água'},
+  {time:'13:45',icon:'😴',title:'Sesta',desc:'Até às 15h · música suave'},
+  {time:'15:00',icon:'🌞',title:'Quintal',desc:'Ar livre em cadeira de rodas'},
+  {time:'15:30',icon:'💪',title:'Exercícios — 2.ª vez',desc:'Ver secção de exercícios'},
+  {time:'16:30',icon:'🍵',title:'Lanche',desc:'Chá ou sumo · dar água'},
+  {time:'19:00',icon:'📺',title:'Preço Certo — RTP1',desc:'2ª a 6ª feira'},
+  {time:'19:30',icon:'🍽️',title:'Jantar',desc:'Dar sopa · dar água'},
+  {time:'21:00',icon:'💧',title:'Água antes de dormir',desc:'Pequeno copo'}
+];
+
+const HIGIENE_STEPS = [
+  {title:'Higiene na cama — manhã (9h)',desc:'Lavar a face com água morna e flanela. Lavar pescoço e orelhas. Mudar a fralda. Secar muito bem as dobras da pele. Aplicar creme nas zonas de pressão (nádegas, calcanhares, cotovelos).'},
+  {title:'Lavar os dentes — após o pequeno-almoço',desc:'Colocar a senhora sentada ou semi-sentada. Usar escova macia com pasta. Escovar os dentes (ou prótese) com movimentos suaves durante 2 minutos. Se tiver prótese: retirar, lavar com escova própria, passar por água. Usar colutório se indicado. Limpar a língua com a escova ou espátula com gaze.'},
+  {title:'Vestir',desc:'Começar pelo lado mais fraco. Falar sempre com ela antes de tocar: "Vou ajudá-la a vestir, está bem?" Escolher roupa confortável e sem botões difíceis.'},
+  {title:'Mudança de fralda (ao longo do dia)',desc:'Verificar a fralda a cada 3 horas. Lavar sempre com água e sabão neutro. Secar bem. Aplicar creme de proteção (ex: Bepanthen ou Sudocrem).'},
+  {title:'Lavar os dentes — após o jantar (≈20h)',desc:'Repetir o processo da manhã. Se tiver prótese: retirar para dormir, deixar em água com comprimido de limpeza. Limpar a boca com gaze humedecida.'},
+  {title:'Preparar para dormir',desc:'Mudar a fralda. Aplicar creme hidratante nas pernas e pés. Posicionar bem com almofadas. Colocar música suave se quiser.'}
+];
+
+const EXERCICIOS = [
+  {cat:'Braços',items:[
+    {name:'Esticar e dobrar o braço direito',reps:'5 vezes'},
+    {name:'Esticar e dobrar o braço esquerdo',reps:'5 vezes'},
+    {name:'Levantar o braço direito para cima',reps:'5 vezes'},
+    {name:'Levantar o braço esquerdo para cima',reps:'5 vezes'},
+    {name:'Rodar os pulsos',reps:'5 vezes cada mão'},
+    {name:'Abrir e fechar a mão',reps:'5 vezes cada mão'}
+  ]},
+  {cat:'Pernas',items:[
+    {name:'Dobrar e esticar a perna direita',reps:'5 vezes'},
+    {name:'Dobrar e esticar a perna esquerda',reps:'5 vezes'},
+    {name:'Rodar os pés',reps:'5 vezes cada pé'},
+    {name:'Dobrar e esticar os pés',reps:'5 vezes cada pé'}
+  ]},
+  {cat:'Cabeça e Pescoço',items:[
+    {name:'Virar a cabeça para os lados',reps:'3 vezes cada lado'},
+    {name:'Baixar a cabeça para o peito',reps:'3 vezes'}
+  ]}
+];
+
+const ATIVIDADES_SEMANA = {
+  'Segunda-feira':[
+    {time:'11:00',icon:'📸',title:'Memória',desc:'Ver fotografias antigas juntas. Perguntar: "Quem é esta pessoa?" "Onde foi tirada esta foto?"'},
+    {time:'16:00',icon:'🎵',title:'Música',desc:'Ouvir fados da Amália. Pedir para ela cantarolar ou bater o ritmo com as mãos.'},
+    {time:'19:00',icon:'📺',title:'Preço Certo na RTP1',desc:'Perguntar: "Quanto acha que custa?"'}
+  ],
+  'Terça-feira':[
+    {time:'11:00',icon:'🌳',title:'Quintal',desc:'Passeio no quintal em cadeira de rodas. Pedir para cheirar as plantas e dizer o nome delas.'},
+    {time:'16:00',icon:'💬',title:'Conversa',desc:'Perguntas sobre a cozinha dela. Ouvir com atenção.'},
+    {time:'19:00',icon:'📺',title:'Preço Certo na RTP1',desc:''}
+  ],
+  'Quarta-feira':[
+    {time:'11:00',icon:'🎲',title:'Jogos',desc:'Adivinhações e provérbios. Ex: "Quem tem dentes e não come?" · "Diga-me um provérbio que conheça!"'},
+    {time:'16:00',icon:'🎤',title:'Cantar',desc:'Cantar músicas populares juntas. "Uma Casa Portuguesa", "Capote e Lenço".'},
+    {time:'19:00',icon:'📺',title:'Preço Certo na RTP1',desc:''}
+  ],
+  'Quinta-feira':[
+    {time:'11:00',icon:'🧵',title:'Tarefas simples',desc:'Dobrar panos pequenos, separar botões por cor ou feijões. Faz sentir útil e activa as mãos.'},
+    {time:'16:00',icon:'🌳',title:'Quintal',desc:'Estar no quintal. Falar sobre as plantas, o tempo, o que ela vê à volta.'},
+    {time:'19:00',icon:'📺',title:'Preço Certo na RTP1',desc:''}
+  ],
+  'Sexta-feira':[
+    {time:'11:00',icon:'✋',title:'Mãos',desc:'Massagem nas mãos com creme hidratante. Falar enquanto faz. Ela vai adorar.'},
+    {time:'16:00',icon:'🎵',title:'Música',desc:'Ouvir músicas que ela pediu durante a semana. Conversa sobre o que mais gostou.'},
+    {time:'19:00',icon:'📺',title:'Preço Certo na RTP1',desc:''}
+  ],
+  'Sábado':[
+    {time:'11:00',icon:'❤️',title:'Família',desc:'Dia da família. Jogar cartas, ver fotos juntos, conversar. Incluir a família nas atividades.'},
+    {time:'15:30',icon:'🎉',title:'Festa',desc:'Músicas animadas: corridinho, vira, folclore. Bater palmas, cantarolar.'}
+  ],
+  'Domingo':[
+    {time:'11:00',icon:'🙏',title:'Paz',desc:'Oração ou missa na televisão se ela quiser. Respeitar o momento de espiritualidade.'},
+    {time:'15:30',icon:'🎵',title:'Fado',desc:'Tarde especial de fado. Amália, Mariza ou Carlos do Carmo.'}
+  ]
+};
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  const content = document.getElementById('content');
+  
+  if(tab === 'horario') {
+    content.innerHTML = `
+      <div class="card">
+        <div class="section-title">📅 Horário do Dia</div>
+        ${HORARIO.map(h => `
+          <div class="horario-item">
+            <div class="horario-time">${h.time}</div>
+            <div class="horario-desc">
+              <div class="horario-title">${h.icon} ${h.title}</div>
+              <div class="horario-detail">${h.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="nota-box">
+        ⚠️ <strong>Lembrar sempre:</strong> Falar com a Belinha com carinho. Explicar o que vai fazer antes de fazer. Tratar com respeito.
+      </div>
+    `;
+  }
+  else if(tab === 'higiene') {
+    content.innerHTML = `
+      <div class="card">
+        <div class="section-title">🛁 Higiene — Passo a Passo</div>
+        ${HIGIENE_STEPS.map((s,i) => `
+          <div class="checklist-item" onclick="toggleCheck(this,'higiene_${i}')">
+            <div class="checkbox"></div>
+            <div style="flex:1">
+              <div style="font-weight:600;margin-bottom:4px">PASSO ${i+1}: ${s.title}</div>
+              <div style="font-size:13px;color:#666;line-height:1.5">${s.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="nota-box">
+        ⚠️ <strong>Atenção sempre:</strong> Falar com a senhora durante toda a higiene. Explicar o que vai fazer antes de fazer. Respeitar a sua privacidade. Fechar a porta ou janela. Nunca deixar a água demasiado quente — testar no pulso primeiro.
+      </div>
+      <button class="btn" onclick="saveProgress()">💾 Guardar Progresso</button>
+    `;
+    loadChecks('higiene');
+  }
+  else if(tab === 'exercicios') {
+    content.innerHTML = `
+      <div class="card">
+        <div class="section-title">💪 Exercícios Físicos</div>
+        <div class="status warning">
+          ⚠️ Fazer de manhã (10h) e de tarde (15h30). Devagar, sem forçar. Se a senhora disser que dói — parar logo.
+        </div>
+        ${EXERCICIOS.map((cat,ci) => `
+          <div style="margin-bottom:20px">
+            <h3 style="font-size:16px;margin-bottom:10px;color:#e85a2e">${cat.cat}</h3>
+            ${cat.items.map((ex,ei) => `
+              <div class="checklist-item" onclick="toggleCheck(this,'ex_${ci}_${ei}')">
+                <div class="checkbox"></div>
+                <div style="flex:1">
+                  <div class="exercise-title">${ex.name}</div>
+                  <div class="exercise-reps">${ex.reps}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+      <div class="nota-box">
+        💬 <strong>O que dizer:</strong> "Muito bem, Belinha!" · "Está a fazer muito bem!" · "Mais um, já falta pouco!" · "Hoje fez tudo certinho, parabéns!"
+      </div>
+      <button class="btn" onclick="saveProgress()">💾 Guardar Progresso</button>
+    `;
+    loadChecks('exercicios');
+  }
+  else if(tab === 'agua') {
+    content.innerHTML = `
+      <div class="card">
+        <div class="section-title">💧 Água — Dar Todos os Dias</div>
+        <div class="status warning">
+          ⚠️ Ela não pede água — mas precisa. Dar sempre sem esperar que peça!
+        </div>
+        <div class="agua-counter">
+          <button class="agua-btn minus" onclick="adjustAgua(-1)">−</button>
+          <div class="agua-value" id="agua-count">0</div>
+          <button class="agua-btn plus" onclick="adjustAgua(1)">+</button>
+        </div>
+        <div style="text-align:center;margin-bottom:15px">
+          <div style="font-size:14px;color:#666">copos de água hoje</div>
+          <div style="font-size:12px;color:#999;margin-top:5px">Meta: 8 copos por dia</div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="agua-progress" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">⏰ Horários para dar água</div>
+        ${[
+          {time:'09:30',desc:'Com o pequeno-almoço (leite ou chá)'},
+          {time:'11:00',desc:'Depois dos exercícios (água)'},
+          {time:'12:30',desc:'Com o almoço (sopa + copo de água)'},
+          {time:'15:00',desc:'No quintal (água ou infusão)'},
+          {time:'16:30',desc:'Ao lanche (chá ou sumo natural)'},
+          {time:'18:30',desc:'Antes do jantar (água)'},
+          {time:'19:30',desc:'Com o jantar (sopa + água)'},
+          {time:'21:00',desc:'Antes de dormir (pequeno copo)'}
+        ].map(h => `
+          <div class="checklist-item" onclick="toggleCheck(this,'agua_${h.time}')">
+            <div class="checkbox"></div>
+            <div style="flex:1">
+              <div style="font-weight:600">${h.time}</div>
+              <div style="font-size:13px;color:#666">${h.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn" onclick="saveProgress()">💾 Guardar Progresso</button>
+    `;
+    loadAgua();
+    loadChecks('agua');
+  }
+  else if(tab === 'atividades') {
+    const days = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    const today = days[new Date().getDay()];
+    
+    content.innerHTML = `
+      <div class="card">
+        <div class="section-title">🎵 Atividades da Semana</div>
+        <div class="day-selector">
+          ${days.map(d => `<div class="day-btn ${d===today?'active':''}" onclick="showDayActivities('${d}')">${d}</div>`).join('')}
+        </div>
+        <div id="day-activities"></div>
+      </div>
+    `;
+    showDayActivities(today);
+  }
+  else if(tab === 'registo') {
+    content.innerHTML = `
+      <div class="card">
+        <div class="section-title">📝 Registo Diário</div>
+        <div style="margin-bottom:15px">
+          <label style="display:block;font-weight:600;margin-bottom:5px">Data:</label>
+          <input type="date" id="reg-date" value="${currentDate}" onchange="currentDate=this.value;loadTodayData()" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px">
+        </div>
+        <div style="margin-bottom:15px">
+          <label style="display:block;font-weight:600;margin-bottom:5px">Humor da Belinha:</label>
+          <select id="reg-humor" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px">
+            <option value="">Selecionar...</option>
+            <option value="muito_feliz">😊 Muito feliz</option>
+            <option value="feliz">🙂 Feliz</option>
+            <option value="normal">😐 Normal</option>
+            <option value="triste">😔 Triste</option>
+            <option value="irritada">😠 Irritada</option>
+          </select>
+        </div>
+        <div style="margin-bottom:15px">
+          <label style="display:block;font-weight:600;margin-bottom:5px">Observações e Notas:</label>
+          <textarea id="reg-notas" rows="5" placeholder="O que aconteceu hoje? Como estava a Belinha? Alguma coisa especial?" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px;font-family:inherit;resize:vertical"></textarea>
+        </div>
+        <button class="btn" onclick="saveRegisto()">💾 Guardar Registo do Dia</button>
+      </div>
+      <div id="status-msg"></div>
+      <div class="card">
+        <div class="section-title">📋 Resumo do Dia</div>
+        <div id="resumo"></div>
+      </div>
+    `;
+    loadTodayData();
+  }
+}
+
+function showDayActivities(day) {
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  const activities = ATIVIDADES_SEMANA[day] || [];
+  document.getElementById('day-activities').innerHTML = activities.length ? activities.map(a => `
+    <div class="horario-item">
+      <div class="horario-time">${a.time}</div>
+      <div class="horario-desc">
+        <div class="horario-title">${a.icon} ${a.title}</div>
+        <div class="horario-detail">${a.desc}</div>
+      </div>
+    </div>
+  `).join('') : '<div style="text-align:center;padding:20px;color:#999">Sem atividades especiais</div>';
+}
+
+function toggleCheck(el, id) {
+  el.classList.toggle('done');
+  if(!todayData.checks) todayData.checks = {};
+  const isDone = el.classList.contains('done');
+  todayData.checks[id] = isDone;
+  
+  // Registar quando foi marcado/desmarcado
+  if(!todayData.timestamps) todayData.timestamps = {};
+  todayData.timestamps[id] = {
+    status: isDone,
+    hora: new Date().toLocaleString('pt-PT', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  };
+}
+
+function loadChecks(section) {
+  if(!todayData.checks) return;
+  document.querySelectorAll('.checklist-item').forEach(el => {
+    const match = el.getAttribute('onclick').match(/'([^']+)'/);
+    if(match && todayData.checks[match[1]]) {
+      el.classList.add('done');
+    }
+  });
+}
+
+function adjustAgua(delta) {
+  if(!todayData.agua) todayData.agua = 0;
+  todayData.agua = Math.max(0, todayData.agua + delta);
+  document.getElementById('agua-count').textContent = todayData.agua;
+  const pct = Math.min(100, (todayData.agua / 8) * 100);
+  document.getElementById('agua-progress').style.width = pct + '%';
+}
+
+function loadAgua() {
+  const count = todayData.agua || 0;
+  document.getElementById('agua-count').textContent = count;
+  const pct = Math.min(100, (count / 8) * 100);
+  document.getElementById('agua-progress').style.width = pct + '%';
+}
+
+async function saveProgress() {
+  todayData.ultima_atualizacao = new Date().toISOString();
+  await saveToDB();
+  showStatus('✅ Progresso guardado com sucesso!', 'success');
+}
+
+async function saveRegisto() {
+  todayData.humor = document.getElementById('reg-humor').value;
+  todayData.notas = document.getElementById('reg-notas').value;
+  todayData.ultima_atualizacao = new Date().toISOString();
+  await saveToDB();
+  showStatus('✅ Registo guardado com sucesso!', 'success');
+  updateResumo();
+}
+
+async function saveToDB() {
+  const now = new Date().toISOString();
+  const { error } = await supabaseClient
+    .from('registos_belinha')
+    .upsert({
+      data: currentDate,
+      dados: todayData,
+      updated_at: now
+    }, { onConflict: 'data' });
+  
+  if(error) {
+    console.error(error);
+    showStatus('❌ Erro ao guardar: ' + error.message, 'error');
+  }
+}
+
+async function loadTodayData() {
+  const { data, error } = await supabaseClient
+    .from('registos_belinha')
+    .select('*')
+    .eq('data', currentDate)
+    .single();
+  
+  if(data && data.dados) {
+    todayData = data.dados;
+  } else {
+    todayData = {};
+  }
+  
+  // Update form fields if on registo tab
+  if(document.getElementById('reg-humor')) {
+    document.getElementById('reg-humor').value = todayData.humor || '';
+    document.getElementById('reg-notas').value = todayData.notas || '';
+    updateResumo();
+  }
+}
+
+function updateResumo() {
+  const checks = todayData.checks || {};
+  const totalChecks = Object.keys(checks).length;
+  const doneChecks = Object.values(checks).filter(v => v).length;
+  const agua = todayData.agua || 0;
+  const ultimaAtualizacao = todayData.ultima_atualizacao ? 
+    new Date(todayData.ultima_atualizacao).toLocaleString('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) : 'Nunca';
+  
+  document.getElementById('resumo').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+      <div style="text-align:center;padding:15px;background:#f9f9f9;border-radius:8px">
+        <div style="font-size:32px;font-weight:700;color:#e85a2e">${doneChecks}</div>
+        <div style="font-size:13px;color:#666">tarefas concluídas</div>
+      </div>
+      <div style="text-align:center;padding:15px;background:#f9f9f9;border-radius:8px">
+        <div style="font-size:32px;font-weight:700;color:#1976d2">${agua}</div>
+        <div style="font-size:13px;color:#666">copos de água</div>
+      </div>
+    </div>
+    <div style="margin-top:15px;padding:12px;background:#e3f2fd;border-radius:8px;text-align:center">
+      <strong>⏰ Última atualização:</strong> ${ultimaAtualizacao}
+    </div>
+    ${todayData.humor ? `<div style="margin-top:10px;padding:12px;background:#fef5f2;border-radius:8px">
+      <strong>Humor:</strong> ${todayData.humor.replace('_',' ')}
+    </div>` : ''}
+    ${todayData.notas ? `<div style="margin-top:10px;padding:12px;background:#f9f9f9;border-radius:8px;line-height:1.6">
+      <strong>Notas:</strong><br>${todayData.notas}
+    </div>` : ''}
+  `;
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('status-msg');
+  if(!el) return;
+  el.innerHTML = `<div class="status ${type}">${msg}</div>`;
+  setTimeout(() => el.innerHTML = '', 5000);
+}
+
+// Initialize
+showTab('horario');
+loadTodayData();
+</script>
+</body>
+</html>
