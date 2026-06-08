@@ -327,7 +327,10 @@ function showTab(tab) {
           <textarea id="reg-notas" rows="5" placeholder="O que aconteceu hoje? Como estava a Belinha? Alguma coisa especial?" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px;font-family:inherit;resize:vertical"></textarea>
         </div>
         <button class="btn" onclick="saveRegisto()">💾 Guardar Registo do Dia</button>
-        <button class="btn btn-secondary" onclick="exportRegistos()" style="margin-top:10px">📥 Exportar Todos os Registos</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <button class="btn btn-secondary" onclick="exportRegistos()">📥 Exportar Registos</button>
+          <button class="btn" onclick="deleteDay()" style="background:#c0392b">🗑️ Apagar Este Dia</button>
+        </div>
       </div>
       <div id="status-msg"></div>
       <div class="card">
@@ -574,6 +577,36 @@ async function exportRegistos() {
   } catch(err) {
     console.error('Erro ao exportar:', err);
     alert('❌ Erro ao exportar: ' + err.message);
+  }
+}
+
+async function deleteDay() {
+  const dataFormatada = new Date(currentDate).toLocaleDateString('pt-PT');
+  const confirmar = confirm(`⚠️ TEM A CERTEZA que quer apagar TODOS os dados do dia ${dataFormatada}?\n\nEsta ação NÃO pode ser desfeita!`);
+  
+  if(!confirmar) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from('registos_belinha')
+      .delete()
+      .eq('data', currentDate);
+    
+    if(error) {
+      alert('❌ Erro ao apagar: ' + error.message);
+      return;
+    }
+    
+    // Limpar dados locais
+    todayData = {};
+    
+    // Recarregar a página
+    loadTodayData();
+    
+    alert('✅ Registo do dia apagado com sucesso!');
+  } catch(err) {
+    console.error('Erro ao apagar:', err);
+    alert('❌ Erro ao apagar: ' + err.message);
   }
 }
 
