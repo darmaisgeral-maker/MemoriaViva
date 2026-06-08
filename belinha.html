@@ -309,7 +309,7 @@ function showTab(tab) {
         <div class="section-title">📝 Registo Diário</div>
         <div style="margin-bottom:15px">
           <label style="display:block;font-weight:600;margin-bottom:5px">Data:</label>
-          <input type="date" id="reg-date" value="${currentDate}" onchange="currentDate=this.value;loadTodayData()" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px">
+          <input type="date" id="reg-date" value="${currentDate}" onchange="changeDate(this.value)" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px">
         </div>
         <div style="margin-bottom:15px">
           <label style="display:block;font-weight:600;margin-bottom:5px">Humor da Belinha:</label>
@@ -327,6 +327,7 @@ function showTab(tab) {
           <textarea id="reg-notas" rows="5" placeholder="O que aconteceu hoje? Como estava a Belinha? Alguma coisa especial?" style="width:100%;padding:10px;border:2px solid #e8e0d8;border-radius:8px;font-family:inherit;resize:vertical"></textarea>
         </div>
         <button class="btn" onclick="saveRegisto()">💾 Guardar Registo do Dia</button>
+        <button class="btn btn-secondary" onclick="exportRegistos()" style="margin-top:10px">📥 Exportar Todos os Registos</button>
       </div>
       <div id="status-msg"></div>
       <div class="card">
@@ -521,6 +522,59 @@ function showStatus(msg, type) {
   if(!el) return;
   el.innerHTML = `<div class="status ${type}">${msg}</div>`;
   setTimeout(() => el.innerHTML = '', 5000);
+}
+
+function changeDate(newDate) {
+  currentDate = newDate;
+  loadTodayData();
+}
+
+async function exportRegistos() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('registos_belinha')
+      .select('*')
+      .order('data', { ascending: false });
+    
+    if(error) {
+      alert('❌ Erro ao exportar: ' + error.message);
+      return;
+    }
+    
+    if(!data || data.length === 0) {
+      alert('⚠️ Não há registos para exportar!');
+      return;
+    }
+    
+    // Criar CSV
+    let csv = 'Data,Humor,Água (copos),Tarefas Concluídas,Notas,Última Atualização\n';
+    
+    data.forEach(registo => {
+      const d = registo.dados || {};
+      const dataFormatada = new Date(registo.data).toLocaleDateString('pt-PT');
+      const humor = d.humor ? d.humor.replace('_', ' ') : '';
+      const agua = d.agua || 0;
+      const checks = d.checks || {};
+      const tarefas = Object.values(checks).filter(v => v).length;
+      const notas = (d.notas || '').replace(/"/g, '""').replace(/\n/g, ' ');
+      const ultimaAtualizacao = d.ultima_atualizacao ? 
+        new Date(d.ultima_atualizacao).toLocaleString('pt-PT') : '';
+      
+      csv += `"${dataFormatada}","${humor}",${agua},${tarefas},"${notas}","${ultimaAtualizacao}"\n`;
+    });
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `registos_belinha_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    
+    alert('✅ Registos exportados com sucesso!');
+  } catch(err) {
+    console.error('Erro ao exportar:', err);
+    alert('❌ Erro ao exportar: ' + err.message);
+  }
 }
 
 // Initialize
