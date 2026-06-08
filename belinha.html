@@ -410,7 +410,16 @@ function loadAgua() {
 async function saveProgress() {
   todayData.ultima_atualizacao = new Date().toISOString();
   await saveToDB();
-  showStatus('✅ Progresso guardado com sucesso!', 'success');
+  
+  // Mostrar mensagem de sucesso na página atual
+  const content = document.getElementById('content');
+  const statusDiv = document.createElement('div');
+  statusDiv.className = 'status success';
+  statusDiv.style.marginTop = '15px';
+  statusDiv.innerHTML = '✅ Progresso guardado com sucesso!';
+  content.appendChild(statusDiv);
+  
+  setTimeout(() => statusDiv.remove(), 3000);
 }
 
 async function saveRegisto() {
@@ -424,17 +433,28 @@ async function saveRegisto() {
 
 async function saveToDB() {
   const now = new Date().toISOString();
-  const { error } = await supabaseClient
-    .from('registos_belinha')
-    .upsert({
-      data: currentDate,
-      dados: todayData,
-      updated_at: now
-    }, { onConflict: 'data' });
   
-  if(error) {
-    console.error(error);
-    showStatus('❌ Erro ao guardar: ' + error.message, 'error');
+  try {
+    const { data, error } = await supabaseClient
+      .from('registos_belinha')
+      .upsert({
+        data: currentDate,
+        dados: todayData,
+        updated_at: now
+      }, { onConflict: 'data' });
+    
+    if(error) {
+      console.error('Erro Supabase:', error);
+      alert('❌ Erro ao guardar: ' + error.message);
+      return false;
+    }
+    
+    console.log('Dados guardados com sucesso!', data);
+    return true;
+  } catch(err) {
+    console.error('Erro ao guardar:', err);
+    alert('❌ Erro ao guardar: ' + err.message);
+    return false;
   }
 }
 
